@@ -1,7 +1,7 @@
 import argparse
 import logging
 import time
-import SigmaConverter
+from Imports import SigmaConverter
 
 """
 Author: Ollie Legg (@JawsCyber)
