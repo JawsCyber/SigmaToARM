@@ -11,7 +11,7 @@ I am a huge fan of the Sigma project for detection engineering, but when it come
 ## Prerequisites
 - Tolerance to read/interpret spaghetti code if required.
 - Python3
-- (Sigma Project Repository)[https://github.com/SigmaHQ/sigma]
+- [Sigma Project Repository](https://github.com/SigmaHQ/sigma)
 - Microsoft Sentinel
 
 ## Get Started
