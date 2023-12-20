@@ -2,13 +2,14 @@
 
 ## Summary
 
-This project provides a method for converting the SigmaProject ruleset into Azure Resource Manager (ARM) templates specifically designed for use with Microsoft Sentinel. By automating this conversion process, the tool facilitates the integration of Sigma rules into Azure Sentinel, supporting DevOps and Sentinel-as-Code practices by creating a deployable rulebase. The library is easily modifyable to support other RootA as well.
+This project provides a method for converting the SigmaProject ruleset into Azure Resource Manager (ARM) templates specifically designed for use with Microsoft Sentinel. By automating this conversion process, the tool facilitates the integration of Sigma rules into Azure Sentinel, supporting DevOps and Sentinel-as-Code practices by creating a deployable rulebase. The library is easily modifyable to support RootA as well.
 
 ## Purpose
 
-I am a huge fan of the Sigma project, but when it comes to integrating these rules with codified deployments of Microsoft Sentinel it can be challenging due to format differences. I made this tool in an attempt to bridge the gap by converting the Sigma rules "en masse" to ARM templates, which are readily deployable via Microsoft Sentinel repositories. It simplifies the process, reduces manual effort, and helps maintain consistency in rule management.
+I am a huge fan of the Sigma project for detection engineering, but when it comes to integrating these rules with codified deployments of Microsoft Sentinel it can be challenging due to format differences. I made this tool in an attempt to bridge the gap by converting the Sigma rules "en masse" to ARM templates, which are readily deployable via Microsoft Sentinel repositories. It simplifies the process, reduces manual effort, and helps maintain consistency in rule management.
 
 ## Prerequisites
+- Tolerance to read/interpret spaghetti code if required.
 - Python3
 - (Sigma Project Repository)[https://github.com/SigmaHQ/sigma]
 - Microsoft Sentinel
@@ -29,4 +30,5 @@ pip3 install -r requirements.txt
 python3 SigmaToARM.py -i "Path/To/Sigma/Rules/" -o "Desired/Output/Directory"
 ```
 
-I'd like to thank my main contributor to this project, GPT4.
+
+**I'd also like to thank my main contributor to this project, GPT4.**
