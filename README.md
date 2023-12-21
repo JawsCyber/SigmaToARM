@@ -10,7 +10,7 @@ I am a huge fan of the Sigma project for detection engineering, but when it come
 
 ## Prerequisites
 - Tolerance to read/interpret spaghetti code if required.
-- [UncoderIO](https://github.com/UncoderIO/Uncoder_IO)
+- [UncoderIO](https://github.com/UncoderIO/Uncoder_IO) has to be deployed and running.
 - Python3
 - [Sigma Project Repository](https://github.com/SigmaHQ/sigma)
 - Microsoft Sentinel
