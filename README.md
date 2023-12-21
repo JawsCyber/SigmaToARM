@@ -2,7 +2,7 @@
 
 ## Summary
 
-This project provides a method for converting the SigmaProject ruleset into Azure Resource Manager (ARM) templates specifically designed for use with Microsoft Sentinel. By automating this conversion process, the tool facilitates the integration of Sigma rules into Azure Sentinel, supporting DevOps and Sentinel-as-Code practices by creating a deployable rulebase. The library is easily modifyable to support RootA as well.
+This project provides a method for converting the SigmaProject ruleset into Azure Resource Manager (ARM) templates specifically designed for use with Microsoft Sentinel. By automating this conversion process, the tool facilitates the integration of Sigma rules into Microsoft Sentinel, supporting DevOps and Sentinel-as-Code practices by creating a deployable rulebase. The library is easily modifyable to support RootA as well.
 
 ## Purpose
 
@@ -33,3 +33,5 @@ python3 SigmaToARM.py -i "Path/To/Sigma/Rules/" -o "Desired/Output/Directory"
 
 
 **I'd also like to thank my main contributor to this project, GPT4.**
+
+### v1.1 Coming Soon...
