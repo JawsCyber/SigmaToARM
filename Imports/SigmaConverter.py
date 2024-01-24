@@ -5,6 +5,7 @@ import pathlib
 import logging
 import yaml
 import time
+import re
 
 """
 The processMultiResponse() function was written to handle cases where Uncoder returns multiple Sentinel rules.
@@ -131,8 +132,75 @@ def processFile(root, file, input_dir, output_dir, url, headers):
             with open(os.path.join(output_dir_path, file.rsplit('.', 1)[0] + '.json'), 'w') as f:
                 f.write(json.dumps(arm_template, indent=4))
 
-def convertSigmaRules(input_dir, output_dir, url, headers):
-    for root, _, files in os.walk(input_dir):
+def parseTagsFromDeTTECT(mapping):
+    try:
+        with open(mapping, 'r') as file:
+            data = json.load(file)
+        attackTechniqueIDs = [technique['techniqueID'] for technique in data.get('techniques', [])]
+        return attackTechniqueIDs
+
+    except Exception as exc:
+        print(f"Error reading or parsing JSON file: {exc}")
+        return []
+
+def parseTagsFromSigma(sigma_rule):
+    try:
+        rule = yaml.safe_load(sigma_rule)
+        tags = rule.get('tags', [])
+        pattern = re.compile(r'^attack\.t\d{4}(?:\.\d{3})?$')
+        attackTechniqueIDs = ['.'.join(tag.split('.')[1:]) for tag in tags if pattern.match(tag)]
+        return attackTechniqueIDs
+
+    except yaml.YAMLError as exc:
+        print(f"Error parsing YAML: {exc}")
+        return []
+
+def findMappedSigmaRules(mappingFile, sigmaDir):
+    attackTechniqueIDs = [tid.lower() for tid in parseTagsFromDeTTECT(mappingFile)]
+    matchedSigmaRules = {}
+
+    for root, dirs, files in os.walk(sigmaDir):
         for file in files:
             if file.endswith(".yml"):
-                processFile(root, file, input_dir, output_dir, url, headers)
+                filePath = os.path.join(root, file)
+                try:
+                    with open(filePath, 'r') as sigmaFile:
+                        sigmaRuleContent = sigmaFile.read()
+                        sigmaTags = parseTagsFromSigma(sigmaRuleContent)
+
+                        for tag in [t.lower() for t in sigmaTags]:
+                            if tag in attackTechniqueIDs:
+                                matchedSigmaRules[file] = filePath
+                                break
+
+                except Exception as e:
+                    print(f"Error reading or parsing Sigma rule file '{filePath}': {e}")
+
+    return matchedSigmaRules
+
+def printDeTTECTMatches(dettect_file):
+    try:
+        with open(dettect_file, 'r') as file:
+            data = json.load(file)
+        attackTechniqueIDs = [technique['techniqueID'] for technique in data.get('techniques', [])]
+
+        if not attackTechniqueIDs:
+            print("No MITRE ATT&CK IDs found in the DeTTECT file.")
+            return
+
+        print("MITRE ATT&CK IDs found in DeTTECT file:")
+        for tid in attackTechniqueIDs:
+            print(tid)
+
+    except Exception as exc:
+        print(f"Error reading or parsing JSON file: {exc}")
+
+def convertSigmaRules(input_dir, output_dir, url, headers, dettectFile=None):
+    if dettectFile:
+        matched_rules = findMappedSigmaRules(dettectFile, input_dir)
+        filesToProcess = set(matched_rules.values())
+    else:
+        filesToProcess = {os.path.join(root, file) for root, _, files in os.walk(input_dir) for file in files if file.endswith(".yml")}
+
+    for filePath in filesToProcess:
+        processFile(os.path.dirname(filePath), os.path.basename(filePath), input_dir, output_dir, url, headers)
