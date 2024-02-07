@@ -14,13 +14,13 @@ This function will take the first rule Uncoder supplies, and output it into the 
 It's written so, in the event that you want all of the rules, you can easily modify the function to output multiple rules. 
 """
 
-def processMultiResponse(response, root, file, input_dir, output_dir):
+def processMultiResponse(response, root, file, inputDir, outputDir):
     responses = response.split('\n\n// ')
-    seen_rules = set()
+    seenRules = set()
     for resp in responses[1:]:
-        split_index = resp.rfind('\n')
-        dataSource = resp[:split_index].strip()
-        jsonResponse = resp[split_index:].strip()
+        splitIndex = resp.rfind('\n')
+        dataSource = resp[:splitIndex].strip()
+        jsonResponse = resp[splitIndex:].strip()
         if jsonResponse and jsonResponse.startswith('{'):
             try:
                 jsonResponse = json.loads(jsonResponse)
@@ -31,29 +31,29 @@ def processMultiResponse(response, root, file, input_dir, output_dir):
 
             jsonResponseStr = json.dumps(jsonResponse, sort_keys=True)
 
-            if jsonResponseStr in seen_rules:
+            if jsonResponseStr in seenRules:
                 continue
 
-            seen_rules.add(jsonResponseStr)
+            seenRules.add(jsonResponseStr)
 
-            relative_path = os.path.relpath(root, input_dir)
+            relativePath = os.path.relpath(root, inputDir)
             if 'union *' in jsonResponse.get('query', '').lower():
                 # SigmaNeedsReview speaks to rules generated with innefficient usage of "union *", as it is unable to determine the correct table (or isn't designed to be outputted into a Sentinel rule by default). 
-                outputDir = os.path.join(output_dir, "SigmaNeedsReview", relative_path)
+                outputDir = os.path.join(outputDir, "SigmaNeedsReview", relativePath)
             else:
-                outputDir = os.path.join(output_dir, "SigmaConverted", relative_path)
+                outputDir = os.path.join(outputDir, "SigmaConverted", relativePath)
 
             pathlib.Path(outputDir).mkdir(parents=True, exist_ok=True)
 
             with open(os.path.join(outputDir, f"{file.rsplit('.', 1)[0]}--{dataSource}.json"), 'w') as f:
                 f.write(json.dumps(jsonResponse, indent=4))
 
-def processFile(root, file, input_dir, output_dir, url, headers):
+def processFile(root, file, inputDir, outputDir, url, headers):
     logging.info(f"Processing file: {file}")
     with open(os.path.join(root, file), 'r') as f:
-        file_content = f.read()
+        fileContent = f.read()
         payload = {
-            "text": file_content,
+            "text": fileContent,
             "source_siem": "sigma",
             "target_siem": "sentinel-kql-rule"
         }
@@ -64,18 +64,18 @@ def processFile(root, file, input_dir, output_dir, url, headers):
         return
     # Sleep in an attempt to not overload the Uncoder docker instance. Feel free to play with the timings!
     time.sleep(0.1)
-    response_json = response.json()
-    if isinstance(response_json, dict):
-        translation = response_json.get('translation')
+    responseJson = response.json()
+    if isinstance(responseJson, dict):
+        translation = responseJson.get('translation')
     else:
         logging.error(f"Error: Response is not a dictionary for file {file}")
         return
 
     if translation and translation.startswith('//'):
-        processMultiResponse(translation, root, file, input_dir, output_dir)
+        processMultiResponse(translation, root, file, inputDir, outputDir)
     else:
-        if isinstance(response_json, dict):
-            translation = response_json.get('translation')
+        if isinstance(responseJson, dict):
+            translation = responseJson.get('translation')
         else:
             logging.error(f"Error: Response is not a dictionary for file {file}")
             return
@@ -84,16 +84,18 @@ def processFile(root, file, input_dir, output_dir, url, headers):
             logging.error(f"Error: No translation received for file {file}")
         else:
             try:
-                translation_json = json.loads(translation)
+                translationJson = json.loads(translation)
+                if 'tactics' in translationJson and isinstance(translationJson['tactics'], list):
+                    translationJson['tactics'] = [tactic.replace(' ', '') for tactic in translationJson['tactics']]
             except json.JSONDecodeError:
                 logging.error(f"Error: Translation is not a valid JSON string for file {file}")
                 logging.error(f"Invalid JSON string: {translation}")
                 raise
 
-            yaml_content = yaml.safe_load(file_content)
-            analytic_id = yaml_content.get('id')
+            yamlContent = yaml.safe_load(fileContent)
+            analyticId = yamlContent.get('id')
             # Can likely reference this template outside of the script, but for now its inline.
-            arm_template = {
+            armTemplate = {
                 "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
                 "contentVersion": "1.0.0.0",
                 "parameters": {
@@ -102,7 +104,7 @@ def processFile(root, file, input_dir, output_dir, url, headers):
                     },
                     "analytic-id": {
                         "type": "string",
-                        "defaultValue": analytic_id,
+                        "defaultValue": analyticId,
                         "minLength": 1,
                         "metadata": {
                             "description": "Unique id for the scheduled alert rule"
@@ -116,21 +118,21 @@ def processFile(root, file, input_dir, output_dir, url, headers):
                         "apiVersion": "2020-01-01",
                         "kind": "Scheduled",
                         "location": "[resourceGroup().location]",
-                        "properties": translation_json
+                        "properties": translationJson
                     }
                 ]
             }
 
-            relative_path = os.path.relpath(root, input_dir)
-            if isinstance(translation_json, dict) and 'union *' in translation_json.get('query', '').lower():
-                output_dir_path = os.path.join(output_dir, "SigmaNeedsReview", relative_path)
+            relativePath = os.path.relpath(root, inputDir)
+            if isinstance(translationJson, dict) and 'union *' in translationJson.get('query', '').lower():
+                outputDirPath = os.path.join(outputDir, "SigmaNeedsReview", relativePath)
             else:
-                output_dir_path = os.path.join(output_dir, "SigmaConverted", relative_path)
+                outputDirPath = os.path.join(outputDir, "SigmaConverted", relativePath)
 
-            pathlib.Path(output_dir_path).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(outputDirPath).mkdir(parents=True, exist_ok=True)
 
-            with open(os.path.join(output_dir_path, file.rsplit('.', 1)[0] + '.json'), 'w') as f:
-                f.write(json.dumps(arm_template, indent=4))
+            with open(os.path.join(outputDirPath, file.rsplit('.', 1)[0] + '.json'), 'w') as f:
+                f.write(json.dumps(armTemplate, indent=4))
 
 def parseTagsFromDeTTECT(mapping):
     try:
@@ -143,9 +145,9 @@ def parseTagsFromDeTTECT(mapping):
         print(f"Error reading or parsing JSON file: {exc}")
         return []
 
-def parseTagsFromSigma(sigma_rule):
+def parseTagsFromSigma(sigmaRule):
     try:
-        rule = yaml.safe_load(sigma_rule)
+        rule = yaml.safe_load(sigmaRule)
         tags = rule.get('tags', [])
         pattern = re.compile(r'^attack\.t\d{4}(?:\.\d{3})?$')
         attackTechniqueIDs = ['.'.join(tag.split('.')[1:]) for tag in tags if pattern.match(tag)]
@@ -178,9 +180,9 @@ def findMappedSigmaRules(mappingFile, sigmaDir):
 
     return matchedSigmaRules
 
-def printDeTTECTMatches(dettect_file):
+def printDeTTECTMatches(dettectFile):
     try:
-        with open(dettect_file, 'r') as file:
+        with open(dettectFile, 'r') as file:
             data = json.load(file)
         attackTechniqueIDs = [technique['techniqueID'] for technique in data.get('techniques', [])]
 
@@ -195,12 +197,12 @@ def printDeTTECTMatches(dettect_file):
     except Exception as exc:
         print(f"Error reading or parsing JSON file: {exc}")
 
-def convertSigmaRules(input_dir, output_dir, url, headers, dettectFile=None):
+def convertSigmaRules(inputDir, outputDir, url, headers, dettectFile=None):
     if dettectFile:
-        matched_rules = findMappedSigmaRules(dettectFile, input_dir)
-        filesToProcess = set(matched_rules.values())
+        matchedRules = findMappedSigmaRules(dettectFile, inputDir)
+        filesToProcess = set(matchedRules.values())
     else:
-        filesToProcess = {os.path.join(root, file) for root, _, files in os.walk(input_dir) for file in files if file.endswith(".yml")}
+        filesToProcess = {os.path.join(root, file) for root, _, files in os.walk(inputDir) for file in files if file.endswith(".yml")}
 
     for filePath in filesToProcess:
-        processFile(os.path.dirname(filePath), os.path.basename(filePath), input_dir, output_dir, url, headers)
+        processFile(os.path.dirname(filePath), os.path.basename(filePath), inputDir, outputDir, url, headers)

@@ -7,7 +7,7 @@ from Imports import SigmaConverter
 
 """
 Author: Ollie Legg (@JawsCyber, https://www.linkedin.com/in/OllieLegg/)
-Version: 1.1.0
+Version: 1.1.1
 Contributors: Matt Felton (https://www.linkedin.com/in/matthew-felton-540206197/)
 License: MIT License
 """
@@ -51,8 +51,8 @@ if __name__ == "__main__":
         else:
             SigmaConverter.convertSigmaRules(args.input, args.output, url, headers, args.dettect)
 
-        end_time = time.time()
-        logging.info(f"Script finished, total runtime: {end_time - startTime} seconds")
+        endTime = time.time()
+        logging.info(f"Script finished, total runtime: {endTime - startTime} seconds")
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
