@@ -6,7 +6,7 @@ This project provides a method for converting the SigmaProject ruleset into Azur
 
 In version 1.1.0, I have introduced the ability to take a [DeTTECT project](https://github.com/rabobank-cdc/DeTTECT) mapping JSON, and only convert the appropriate Sigma rules that match the [Mitre Technique/Sub-Techniques](https://attack.mitre.org/techniques/enterprise/) relevant to your organisation.
 
-V1.1.1 fixes the Mitra Tactics bug (SIGMA uses whitespace, Microsoft doesn't).
+V1.1.1 fixes the Mitre Tactics bug (SIGMA uses whitespace, Microsoft doesn't).
 
 ## Purpose
 
